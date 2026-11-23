@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    html {
+        font-family: 'Figtree', ui-sans-serif, system-ui, sans-serif;
+    }
+}
+
+@layer components {
+    .kadca-card {
+        @apply rounded-xl border border-slate-200 bg-white shadow-sm;
+    }
+
+    .kadca-label {
+        @apply mb-2 block text-sm font-medium text-slate-700;
+    }
+}
+
+[x-cloak] {
+    display: none !important;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    @apply rounded-full bg-slate-300;
+}
