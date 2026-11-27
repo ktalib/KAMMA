@@ -26,9 +26,16 @@ class DocWareController extends Controller
         ];
         $live = fn () => FileIndexing::query()->live()->whereHas('pageTypings');
 
+        // KLAES file details pop-up and the card's Movement History need the typed pages and the tracker moves.
+        $files = $dms->archive($filters);
+        $files->getCollection()->load([
+            'pageTypings' => fn ($q) => $q->orderBy('serial_number'),
+            'tracker.movements' => fn ($q) => $q->with(['fromUnit', 'toUnit'])->orderByDesc('acted_at')->orderByDesc('id'),
+        ]);
+
         return view('archive.index', [
             'stats' => $dms->archiveStats(),
-            'files' => $dms->archive($filters),
+            'files' => $files,
             'filters' => $filters,
             'landUses' => $live()->whereNotNull('land_use_type')->distinct()->orderBy('land_use_type')->pluck('land_use_type'),
             'lgas' => $live()->whereNotNull('lga')->distinct()->orderBy('lga')->pluck('lga'),
@@ -38,7 +45,7 @@ class DocWareController extends Controller
         ]);
     }
 
-    public function show(FileIndexing $indexing, DmsFiles $dms): View
+    public function show(FileIndexing $indexing, DmsFiles $dms, \App\Services\Dms\PageTypes $types): View
     {
         abort_if($indexing->is_deleted, 404);
         $file = $dms->query()->find($indexing->getKey());
@@ -49,6 +56,10 @@ class DocWareController extends Controller
             'file' => $file, 'pages' => $pages, 'dms' => $dms,
             'groups' => $pages->groupBy(fn ($s) => $s->pageTyping?->typeLabel() ?? 'Not typed yet'),
             'tracker' => $indexing->tracker()->first(),
+            // Previous File / Next File in the archive (KLAES viewer).
+            'prevFile' => FileIndexing::query()->live()->whereHas('pageTypings')->where('id', '<', $indexing->id)->max('id'),
+            'nextFile' => FileIndexing::query()->live()->whereHas('pageTypings')->where('id', '>', $indexing->id)->min('id'),
+            'pageTypes' => $types->all(), // Edit Type
         ]);
     }
 }

@@ -35,10 +35,9 @@ Route::middleware(['auth', $kammaTables])->group(function () {
 
     Route::prefix('dms')->name('dms.')->group(function () {
         Route::get('/serial-grouping', [Ui\DmsExtraController::class, 'grouping'])->name('grouping');
-        Route::get('/print-labels', [Ui\DmsExtraController::class, 'labels'])->name('labels');
-        Route::get('/print-labels/sheet', [Ui\DmsExtraController::class, 'labelSheet'])->name('labels.sheet');
+        // Print Files Label: copied from KLAES 2026-11-25, routes/web.php (Dms\PrintLabelController).
         Route::get('/sign-in-out-sheet', [Ui\DmsExtraController::class, 'signin'])->name('signin');
-        Route::get('/blind-scanning', [Ui\DmsExtraController::class, 'blind'])->name('blind');
+        // Blind Scanning has its back end since 2026-11-25: routes/web.php (Dms\BlindScanController).
         Route::get('/quality-control', [Ui\DmsExtraController::class, 'qualityControl'])->name('qc');
     });
 
@@ -52,4 +51,36 @@ Route::middleware(['auth', $kammaTables])->group(function () {
         Route::get('/transaction-token-control', [Ui\RevenueController::class, 'tokens'])->name('tokens');
     });
 
+    // GIS.
+    Route::prefix('gis')->name('gis.')->group(function () {
+        Route::get('/survey-plan-extraction', [Ui\GisController::class, 'extraction'])->name('extraction');
+        Route::get('/map', [Ui\GisController::class, 'map'])->name('map');
+        Route::get('/approvals', [Ui\GisController::class, 'approvals'])->name('approvals');
+        Route::get('/reports', [Ui\GisController::class, 'reports'])->name('reports');
+    });
+
+    // Legacy Systems.
+    Route::get('/legacy-systems', [Ui\LegacyController::class, 'index'])->name('legacy.index');
+
+    // HR Manager.
+    Route::prefix('hr')->name('hr.')->group(function () {
+        Route::get('/manual-attendance', [Ui\HrController::class, 'manualAttendance'])->name('manual-attendance');
+        Route::get('/attendance-tracking', [Ui\HrController::class, 'attendance'])->name('attendance');
+        Route::get('/payroll', [Ui\HrController::class, 'payroll'])->name('payroll');
+    });
+
+    // System Admin.
+    Route::prefix('system-admin')->name('admin.')->group(function () {
+        Route::get('/', [Ui\AdminController::class, 'dashboard'])->name('dashboard');
+        Route::get('/configurable-entities', [Ui\AdminController::class, 'entities'])->name('entities');
+        Route::get('/user-roles', [Ui\AdminController::class, 'roles'])->name('roles');
+        Route::get('/digital-signatures', [Ui\AdminController::class, 'signatures'])->name('signatures');
+        Route::get('/settings', [Ui\AdminController::class, 'settings'])->name('settings');
+        Route::get('/folder-watcher', [Ui\AdminController::class, 'folderWatcher'])->name('folder-watcher');
+        Route::get('/bulk-sms', [Ui\AdminController::class, 'sms'])->name('sms');
+        Route::get('/verify-qrcode', [Ui\AdminController::class, 'verify'])->name('verify');
+        Route::get('/mobile-apps', [Ui\AdminController::class, 'mobileApps'])->name('mobile-apps');
+        Route::get('/documentation', [Ui\AdminController::class, 'documentation'])->name('documentation');
+        Route::get('/documentation/file', [Ui\AdminController::class, 'documentationFile'])->name('documentation.file');
+    });
 });

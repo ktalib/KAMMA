@@ -38,7 +38,11 @@ return [
     'bulk_sms_ng' => [
         'email' => env('BULK_SMS_NG_EMAIL'),
         'password' => env('BULK_SMS_NG_PASSWORD'),
-        'sender' => env('BULK_SMS_NG_SENDER', 'KAMMA'),
+        // Same Bulk-SMS.ng account as KLAES. The sender must be registered with the vendor (max 11 characters): an
+        // unregistered one is billed and never delivered. Agency name by user choice (2026-11-23); KLAES-CONTROL goes out as KLAES-CONTR.
+        'sender' => env('BULK_SMS_NG_SENDER', 'KLAES-METRO'),
+        'gateway' => env('BULK_SMS_NG_GATEWAY', '1'),
+        'allow_console' => env('BULK_SMS_NG_ALLOW_CONSOLE', false),
     ],
 
 ];

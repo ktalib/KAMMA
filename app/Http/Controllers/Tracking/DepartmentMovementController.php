@@ -21,7 +21,7 @@ class DepartmentMovementController extends Controller
 {
     public function index(Request $request)
     {
-        $units = Unit::active()->get(['id', 'name']);
+        $units = Unit::forMovement()->get(['id', 'name', 'department', 'is_external']);
         if ($request->filled('unit') && $units->firstWhere('id', (int) $request->query('unit'))) {
             session(['kamma_office' => (int) $request->query('unit')]);
         }

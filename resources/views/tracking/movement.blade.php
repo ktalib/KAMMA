@@ -27,8 +27,13 @@
                     <span class="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-100 text-indigo-600"><i data-lucide="building-2" class="h-5 w-5"></i></span>
                     <div><div class="text-xs uppercase tracking-wide text-gray-400">My Office</div><div class="font-semibold text-gray-900 dark:text-slate-100" x-text="officeName || 'No unit'"></div></div>
                     <button type="button" @click.stop="changing = ! changing" class="ml-3 text-sm font-semibold text-indigo-600 hover:text-indigo-800">Change</button>
-                    <div x-show="changing" x-cloak @click.outside="changing = false" class="absolute right-0 top-full z-20 mt-1 w-64 rounded-md border border-gray-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-900">
-                        <template x-for="u in units" :key="u.id"><a :href="unitUrl + '?unit=' + u.id" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 dark:text-slate-300 dark:hover:bg-slate-800" x-text="u.name"></a></template>
+                    <div x-show="changing" x-cloak @click.outside="changing = false" class="absolute right-0 top-full z-20 mt-1 max-h-96 w-80 overflow-y-auto rounded-md border border-gray-200 bg-white py-1 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+                        <template x-for="g in unitGroups()" :key="'g-' + g.label">
+                            <div>
+                                <div class="sticky top-0 bg-gray-50 px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-gray-400 dark:bg-slate-800 dark:text-slate-500" x-text="g.label"></div>
+                                <template x-for="u in g.items" :key="u.id"><a :href="unitUrl + '?unit=' + u.id" class="block px-4 py-2 text-sm text-gray-700 hover:bg-indigo-50 dark:text-slate-300 dark:hover:bg-slate-800" x-text="u.name"></a></template>
+                            </div>
+                        </template>
                         <a href="{{ route('tracking.units') }}" class="block border-t border-gray-100 px-4 py-2 text-xs font-semibold text-indigo-600 dark:border-slate-800">Manage units</a>
                     </div>
                 </div>
@@ -64,7 +69,7 @@
                         <div class="mt-4 rounded-lg border border-orange-200 bg-orange-50 p-4 dark:border-orange-500/30 dark:bg-orange-500/10">
                             <div class="text-sm font-semibold text-gray-900 dark:text-slate-100"><span x-text="found.file_number"></span> · <span class="font-mono text-xs" x-text="found.tracking_id"></span></div>
                             <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                                <select x-model="sendTo" class="rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"><option value="">Send to…</option><template x-for="u in units.filter(u => u.id !== office)" :key="u.id"><option :value="u.id" x-text="u.name"></option></template></select>
+                                <select x-model="sendTo" class="rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"><option value="">Send to…</option><template x-for="g in unitGroups(office)" :key="'sg-' + g.label"><optgroup :label="g.label"><template x-for="u in g.items" :key="u.id"><option :value="u.id" x-text="u.name"></option></template></optgroup></template></select>
                                 <select x-model="sendPurpose" class="rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"><option value="">Purpose…</option><template x-for="p in purposes" :key="p"><option x-text="p"></option></template></select>
                             </div>
                             <button type="button" @click="send()" class="mt-3 inline-flex items-center gap-2 rounded-md bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"><i data-lucide="send" class="h-4 w-4"></i> Send</button>

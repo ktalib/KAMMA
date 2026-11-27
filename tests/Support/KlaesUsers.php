@@ -25,6 +25,7 @@ trait KlaesUsers
             $table->string('email')->nullable();
             $table->string('phone_number')->nullable();
             $table->string('rank')->nullable();
+            $table->string('type')->nullable(); // KLAES user type ("Super Admin" …)
             $table->string('password');
             $table->integer('is_active')->nullable();
             $table->timestamp('email_verified_at')->nullable();

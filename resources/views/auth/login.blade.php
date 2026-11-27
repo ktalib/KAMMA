@@ -1,5 +1,8 @@
 <x-guest-layout>
     <x-auth-session-status class="mb-6" :status="session('status')" />
+    @if (session('error'))
+        <div class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-300">{{ session('error') }}</div>
+    @endif
 
     <form method="POST" action="{{ route('login') }}" class="space-y-5">
         @csrf

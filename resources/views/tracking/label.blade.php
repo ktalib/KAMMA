@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <x-favicon />
     <title>Label {{ $tracker->tracking_id }} - KLAES-METRO</title>
     <style>
         /* A file label: 100 × 60 mm, printed as is (no app chrome). */

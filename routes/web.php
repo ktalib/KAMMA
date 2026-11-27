@@ -1,10 +1,13 @@
 <?php
 
+use App\Http\Controllers\Archive\DocWareActionController;
 use App\Http\Controllers\Archive\DocWareController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Dms\BlindScanController;
 use App\Http\Controllers\Dms\IndexingController;
 use App\Http\Controllers\Dms\PageTypingController;
 use App\Http\Controllers\Dms\ScanUploadController;
+use App\Http\Controllers\Dms\PrintLabelController;
 use App\Http\Controllers\Kamma\ApprovalController;
 use App\Http\Controllers\Kamma\BillController;
 use App\Http\Controllers\Kamma\EregistryController;
@@ -124,11 +127,49 @@ Route::middleware(['auth', $dmsTables])->prefix('dms')->name('dms.')->group(func
     Route::post('/pagetyping/scans/{scan}', [PageTypingController::class, 'save'])->whereNumber('scan')->name('pagetyping.save');
 });
 
+// DMS > Blind Scanning (copied from KLAES, user 2026-11-25): EDMS/BLIND_SCAN/KAMMA_Raw on KAMMA's own storage, then
+// Scan Upload (Upload Method = Blind scan) takes the pages into the file.
+Route::middleware(['auth', 'kamma.preview:file_indexings,scannings,page_typings,blind_scans'])->prefix('dms')->name('dms.')->group(function () {
+    Route::get('/blind-scanning', [BlindScanController::class, 'index'])->name('blind');
+    Route::post('/blind-scanning', [BlindScanController::class, 'migrate'])->name('blind.migrate');
+    Route::get('/blind-scanning/files/{indexing}', [BlindScanController::class, 'folder'])->whereNumber('indexing')->name('blind.folder');
+    Route::get('/blind-scanning/pages/{scan}', [BlindScanController::class, 'image'])->whereNumber('scan')->name('blind.image');
+    Route::delete('/blind-scanning/pages/{scan}', [BlindScanController::class, 'destroy'])->whereNumber('scan')->name('blind.destroy');
+    Route::post('/scanning/blind', [BlindScanController::class, 'take'])->name('scanning.blind');
+});
+
+// DMS > Indexing > File SerialNo Grouping > Print Files Label, COPIED from KLAES's printlabel (user 2026-11-25): the KLAES
+// page + JS, answered from KAMMA's shadow files and kamma_print_label_batches / _items (Dms\PrintLabelController).
+Route::middleware(['auth', 'kamma.preview:file_indexings,file_trackers,serials,print_label_batches,print_label_batch_items'])->prefix('dms/print-labels')->name('dms.labels')->group(function () {
+    Route::get('/', [PrintLabelController::class, 'index']);
+    Route::get('/print-template', [PrintLabelController::class, 'printTemplate'])->name('.print-template');
+    Route::prefix('api')->name('.api.')->group(function () {
+        Route::get('/files', [PrintLabelController::class, 'files'])->name('files');
+        Route::post('/batch', [PrintLabelController::class, 'createBatch'])->name('create-batch');
+        Route::get('/batches', [PrintLabelController::class, 'batches'])->name('batches');
+        Route::get('/batch/{id}', [PrintLabelController::class, 'batch'])->whereNumber('id')->name('batch');
+        Route::get('/batch/{id}/print', [PrintLabelController::class, 'batchForPrinting'])->whereNumber('id')->name('batch-for-printing');
+        Route::patch('/batch/{id}/print', [PrintLabelController::class, 'markPrinted'])->whereNumber('id')->name('mark-printed');
+        Route::delete('/batch/{id}', [PrintLabelController::class, 'deleteBatch'])->whereNumber('id')->name('delete-batch');
+        Route::get('/statistics', [PrintLabelController::class, 'statistics'])->name('statistics');
+        Route::get('/grouping/preview', [PrintLabelController::class, 'groupingPreview'])->name('grouping-preview');
+        Route::get('/registry-batches', [PrintLabelController::class, 'registryBatches'])->name('registry-batches');
+        Route::get('/rack-label/status', [PrintLabelController::class, 'rackLabelStatus'])->name('rack-label-status');
+        Route::post('/override/lookup', [PrintLabelController::class, 'overrideLookup'])->name('override-lookup');
+    });
+});
+
 // Digital File Archive: Dashboard and File Digital Library - Doc-WARE (copied from KADCA / KLAES's File Digital Archive).
 Route::middleware(['auth', $dmsTables])->prefix('archive')->name('archive.')->group(function () {
     Route::get('/dashboard', [ArchiveExtraController::class, 'dashboard'])->name('dashboard');
     Route::get('/', [DocWareController::class, 'index'])->name('index');
     Route::get('/{indexing}', [DocWareController::class, 'show'])->whereNumber('indexing')->name('show');
+    // Doc-WARE actions (2026-11-25): Delete File (Super Admin), and the viewer's Edit Mode.
+    Route::post('/{indexing}/delete', [DocWareActionController::class, 'deleteFile'])->whereNumber('indexing')->name('delete-file');
+    Route::post('/pages/{scan}/delete', [DocWareActionController::class, 'deletePage'])->whereNumber('scan')->name('pages.delete');
+    Route::post('/pages/{scan}/rotate', [DocWareActionController::class, 'rotate'])->whereNumber('scan')->name('pages.rotate');
+    Route::post('/pages/{scan}/replace', [DocWareActionController::class, 'replace'])->whereNumber('scan')->name('pages.replace');
+    Route::post('/pages/{scan}/qc', [DocWareActionController::class, 'qc'])->whereNumber('scan')->name('pages.qc');
 });
 
 // KLAES land files, read-only, for the file selector.
@@ -178,6 +219,7 @@ Route::middleware(['auth', $allTables])->prefix('kamma')->name('kamma.')->group(
 
     Route::get('/{kind}/memos', [MemoController::class, 'index'])->whereIn('kind', $kinds)->name('memos.index');
     Route::post('/{kind}/memos', [MemoController::class, 'store'])->whereIn('kind', $kinds)->name('memos.store');
+    Route::get('/{kind}/memos/{memo}', [MemoController::class, 'show'])->whereIn('kind', $kinds)->whereNumber('memo')->name('memos.show');
 
     Route::get('/{kind}/e-registry', [EregistryController::class, 'index'])->whereIn('kind', ['st', 'sltr'])->name('eregistry');
 
@@ -206,3 +248,9 @@ Route::middleware(['auth', $allTables])->prefix('kamma')->name('kamma.')->group(
 
 require __DIR__.'/auth.php';
 require __DIR__.'/ui.php';
+
+// Development Permit = Building Plan Approval staff screens, moved in from the KADCA app 2026-11-25 (option A).
+require __DIR__.'/bpa.php';
+
+// Applicant portal (Planning Recommendation requests), switched on 2026-11-25 (user: "bring it, switch it on now").
+require __DIR__.'/portal.php';

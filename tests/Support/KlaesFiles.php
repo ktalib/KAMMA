@@ -30,6 +30,14 @@ trait KlaesFiles
             $table->time('kamma_time_matched')->nullable();
         });
 
+        // dbo.grouping: tracking IDs by file number.
+        Schema::connection('klaes')->create('grouping', function (Blueprint $table) {
+            $table->id();
+            foreach (['awaiting_fileno', 'indexing_mls_fileno', 'tracking_id', 'deleted_at'] as $col) {
+                $table->string($col)->nullable();
+            }
+        });
+
         // dbo.fileNumber: the same file number can sit in several columns.
         Schema::connection('klaes')->create('fileNumber', function (Blueprint $table) {
             $table->id();

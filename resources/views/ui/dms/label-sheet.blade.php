@@ -3,6 +3,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
+    <x-favicon />
     <title>File labels — {{ config('app.name', 'KAMMA') }}</title>
     <style>
         * { box-sizing: border-box; }

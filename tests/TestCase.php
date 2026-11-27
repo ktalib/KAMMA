@@ -43,4 +43,11 @@ abstract class TestCase extends BaseTestCase
 
         return $app;
     }
+
+    /** No test writes the real EDMS folders (storage/app/private/EDMS): the edms disk is always a fake. */
+    protected function setUp(): void
+    {
+        parent::setUp();
+        \Illuminate\Support\Facades\Storage::fake('edms');
+    }
 }

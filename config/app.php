@@ -14,6 +14,8 @@ return [
     */
 
     'name' => env('APP_NAME', 'Laravel'),
+    // Agency name shown to users (sign-in code email/SMS). The app name stays the short code.
+    'brand' => env('APP_BRAND', 'KLAES-METRO'),
 
     /*
     |--------------------------------------------------------------------------

@@ -2,6 +2,7 @@
 
 namespace App\Services\Tracking;
 
+use App\Models\Bpa\Application;
 use App\Models\Dms\FileIndexing;
 use App\Models\Tracking\FileTracker;
 use App\Models\Tracking\Unit;
@@ -112,6 +113,50 @@ class FileTracking
 
         return $this->log(['kind' => 'file', 'file_indexing_id' => $file->id, 'unit_id' => $unit->id,
             'purpose' => 'Shadow file commissioned', 'priority' => 'Medium'], $officer);
+    }
+
+    /**
+     * A commissioned BP file (Building Plan Approval, moved in from KADCA 2026-11-25) starts its tracking in
+     * Architecture. One tracker per application. Call inside the commissioning transaction.
+     */
+    public function startForBpaApplication(Application $application, User $officer): FileTracker
+    {
+        if ($existing = FileTracker::where('bpa_application_id', $application->id)->first()) {
+            return $existing;
+        }
+        $unit = Unit::where('stage', 'architecture')->first() ?? Unit::active()->firstOrFail();
+        $tracker = FileTracker::create([
+            'tracking_id' => $this->newTrackingId(),
+            'kind' => 'file',
+            'bpa_application_id' => $application->id,
+            'reference' => $application->bp_file_no ?? $application->application_no,
+            'title' => $application->developer_name,
+            'priority' => 'Medium',
+            'status' => 'in_unit',
+            'current_unit_id' => $unit->id,
+            'created_by' => $officer->getKey(),
+            'created_by_name' => $officer->name,
+        ]);
+        $this->record($tracker, 'logged', null, $unit->id, 'BP file commissioned', null, $officer);
+
+        return $tracker;
+    }
+
+    /** followDesk() for a BP file: the physical file goes to the BPA desk it now sits with. */
+    public function followBpaDesk(Application $application, string $toStage, string $purpose, User $officer): void
+    {
+        $tracker = FileTracker::where('bpa_application_id', $application->id)->first();
+        $to = Unit::where('stage', $toStage)->where('is_active', true)->first();
+        if ($tracker === null || $to === null) {
+            return;
+        }
+        if ($tracker->status === 'in_transit') {
+            $this->receive($tracker, 'Received when the desk acted on the file.', $officer);
+            $tracker->refresh();
+        }
+        if ((int) $tracker->current_unit_id !== $to->id) {
+            $this->send($tracker, $to->id, $purpose, null, $officer);
+        }
     }
 
     /**

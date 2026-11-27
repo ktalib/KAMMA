@@ -8,7 +8,7 @@
         <meta name="theme-color" content="#047857">
 
         <title>@yield('title', 'Applicant Portal') &mdash; KLAES-METRO</title>
-        <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
+        <x-favicon />
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800&display=swap" rel="stylesheet" />

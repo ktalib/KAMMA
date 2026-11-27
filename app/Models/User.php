@@ -66,4 +66,13 @@ class User extends Authenticatable
     {
         return Attribute::get(fn () => trim($this->first_name.' '.$this->last_name) ?: (string) $this->username);
     }
+
+    /**
+     * KLAES Super Admin (klas App\Models\User::isSuperAdmin): dbo.users.type "Super Admin" (or KLAES's "Supper Admin").
+     * KLAES also counts a Super Admin role; KAMMA does not read KLAES roles yet, so only the user type counts here.
+     */
+    public function isSuperAdmin(): bool
+    {
+        return in_array(strtolower(trim((string) $this->type)), ['super admin', 'supper admin'], true);
+    }
 }

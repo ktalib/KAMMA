@@ -13,6 +13,13 @@
         ['portal.bills', 'Bills', 'receipt', []],
         ['portal.notifications', 'Notifications', 'bell', []],
     ];
+    // Building Plan Approval (2026-11-25: the building plan portal comes under KAMMA), copied from the KADCA portal.
+    $bpaLinks = [
+        ['portal.bpa.index', 'My building plans', 'building-2', ['portal.bpa.applications.show']],
+        ['portal.bpa.applications.create', 'New building plan', 'file-plus-2', []],
+        ['portal.bpa.progress.index', 'Construction progress', 'camera', []],
+        ['portal.bpa.inspections.index', 'Site inspections', 'calendar-check', []],
+    ];
     // Phones: the things an applicant does most, along the bottom of the screen.
     $tabs = [
         ['portal.dashboard', 'Home', 'house', ['portal.applications.show']],
@@ -62,6 +69,15 @@
                 </a>
             @endforeach
 
+            <p class="px-3 pb-2 pt-5 text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">Building Plans</p>
+            @foreach ($bpaLinks as [$route, $label, $icon, $also])
+                @php $active = request()->routeIs($route, ...$also); @endphp
+                <a href="{{ route($route) }}" @if ($active) aria-current="page" @endif class="{{ $navBase }} {{ $active ? $navOn : $navOff }}">
+                    <i data-lucide="{{ $icon }}" class="h-4 w-4 shrink-0" aria-hidden="true"></i>
+                    <span class="flex-1">{{ $label }}</span>
+                </a>
+            @endforeach
+
             <p class="px-3 pb-2 pt-5 text-[10px] font-extrabold uppercase tracking-widest text-slate-400 dark:text-slate-500">Account</p>
             @php $active = request()->routeIs('portal.profile*'); @endphp
             <a href="{{ route('portal.profile') }}" @if ($active) aria-current="page" @endif class="{{ $navBase }} {{ $active ? $navOn : $navOff }}">
@@ -104,8 +120,11 @@
         @if (config('kamma.portal.preview', true))
             <div class="border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-900 sm:px-6 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
                 <i data-lucide="eye" class="mr-1 inline h-3.5 w-3.5 align-[-2px]" aria-hidden="true"></i>
-                Preview: the portal screens are ready; saving opens with the backend. Nothing you submit is stored yet.
-                @if (! empty($applicant['is_demo'])) You are signed in as the demo applicant. @endif
+                @if (! empty($applicant['is_demo']))
+                    Preview: you are signed in as the demo applicant. The requests shown are samples and nothing you submit is stored.
+                @else
+                    Building plan applications are saved. Planning Recommendation requests, site inspection booking and construction progress open soon (preview).
+                @endif
             </div>
         @endif
 

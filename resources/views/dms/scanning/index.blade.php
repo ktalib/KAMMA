@@ -1,7 +1,12 @@
 {{-- DMS > Scanning > Upload Indexed Files, copied from KLAES Scan Uploads (resources/views/scanning/index.blade.php):
      "Document Upload" heading, Today's Uploads / Pending Page Typing / Total Scanned / All Time Documents, the Upload
      Documents and Uploaded Documents tabs, Select Indexed File, "Convert PDF files to images (client-side)", drag and drop,
-     Start Upload / Cancel / Upload More / View Uploaded Files. ?url=scmore = DMS Update > Scan More (typed files only). --}}
+     Start Upload / Cancel / Upload More / View Uploaded Files. ?url=scmore = DMS Update > Scan More (typed files only).
+     2026-11-25 (user: copy the KLAES UI, back end next): the KLAES Select Indexed File dialog (Registry, Upload Method
+     Blind scan / Direct upload, Browse Large-Format Scans, Preview file, Load Documents), the Blind Scan Documents
+     pop-up over EDMS/BLIND_SCAN/KAMMA_Raw, and on Uploaded Documents the source tabs, paper-size filter, Toggle View and
+     Proceed to Page Typing. Blind scan is live since 2026-11-25 (BLIND_SCAN/KAMMA_Raw -> SCAN_UPLOAD/KAMMA); Large-Format and Module Uploads are
+     still preview. --}}
 <x-app-layout :title="$scanMore ? 'Scan More' : 'Upload Indexed Files'">
     @php
         $th = 'whitespace-nowrap px-4 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400';
@@ -29,6 +34,8 @@
             'upload' => route('dms.scanning.upload'),
             'pages' => route('dms.scanning.pages', ['indexing' => '__ID__']),
             'typing' => route('dms.pagetyping.type', ['indexing' => '__ID__']),
+            'blindFolder' => route('dms.blind.folder', ['indexing' => '__ID__', 'pending' => 1]),
+            'blindTake' => route('dms.scanning.blind'),
             'selected' => $pre,
             'scanMore' => $scanMore,
             'tab' => $tab,
@@ -180,16 +187,41 @@
                     <h3 class="font-bold text-slate-800 dark:text-slate-100">Uploaded Documents</h3>
                     <p class="text-xs text-slate-500 dark:text-slate-400">Files with scanned pages, latest first.</p>
                 </div>
-                <form method="GET" class="flex items-center gap-2">
+                <form method="GET" class="flex flex-wrap items-center gap-2">
                     <input type="hidden" name="tab" value="uploaded">
                     @if ($scanMore)<input type="hidden" name="url" value="scmore"><input type="hidden" name="from" value="{{ request('from') }}">@endif
+                    <div class="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-1.5 dark:bg-slate-800/50">
+                        <label for="paper-size-filter" class="whitespace-nowrap text-sm font-semibold text-slate-700 dark:text-slate-200">Filter:</label>
+                        <select id="paper-size-filter" name="paper" onchange="this.form.submit()" class="rounded-lg border-slate-300 py-1 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                            @foreach (['' => 'All Sizes', 'A4' => 'A4', 'A5' => 'A5', 'A3' => 'A3', 'Letter' => 'Letter', 'Legal' => 'Legal', 'Custom' => 'Custom'] as $v => $l)
+                                <option value="{{ $v }}" @selected($paper === $v)>{{ $l }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                     <div class="relative">
                         <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
-                        <input type="search" name="search" value="{{ $search }}" placeholder="File no., title, plot, district, LGA…" class="w-72 rounded-lg border border-slate-300 py-2 pl-9 pr-3 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                        <input type="search" name="search" value="{{ $search }}" placeholder="Search files..." class="w-72 rounded-lg border border-slate-300 py-2 pl-9 pr-3 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
                     </div>
+                    <button type="button" @click="view = view === 'list' ? 'folder' : 'list'" class="inline-flex items-center gap-2 whitespace-nowrap rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+                        <i data-lucide="layout-grid" class="h-4 w-4"></i> Toggle View
+                    </button>
                 </form>
             </div>
-            <div class="overflow-x-auto">
+            {{-- Source tabs: where the pages came from (KLAES ScanSource). Module Uploads = pages other KAMMA modules upload. --}}
+            <nav class="flex flex-wrap gap-2 border-b border-slate-100 px-5 py-3 dark:border-slate-800" aria-label="Document source">
+                @foreach (['scanned' => ['Scanned Files', 'scan-line', $uploaded->total()], 'uploads' => ['Module Uploads', 'blocks', 0]] as $key => [$lbl, $ico, $n])
+                    <a href="{{ route('dms.scanning.index', array_filter(['tab' => 'uploaded', 'source' => $key, 'url' => $scanMore ? 'scmore' : null, 'from' => $scanMore ? request('from') : null])) }}"
+                       class="inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium {{ $source === $key ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800' }}"
+                       @if ($source === $key) aria-current="page" @endif>
+                        <i data-lucide="{{ $ico }}" class="h-4 w-4"></i> {{ $lbl }}
+                        <span class="rounded-full px-2 text-xs {{ $source === $key ? 'bg-white text-blue-700' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300' }}">{{ number_format($n) }}</span>
+                    </a>
+                @endforeach
+            </nav>
+            @if ($source === 'uploads')
+                <div class="p-6"><x-ui.empty icon="blocks" title="No module uploads yet">Pages uploaded from other KAMMA modules (KSI photos, memos, bills) will be listed here once those uploads go through the DMS.</x-ui.empty></div>
+            @else
+            <div x-show="view === 'list'" class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-slate-100 dark:divide-slate-800">
                     <thead class="bg-slate-50/80 dark:bg-slate-800/50">
                         <tr>
@@ -221,31 +253,73 @@
                                 </td>
                             </tr>
                         @empty
-                            <tr><td colspan="10" class="px-4 py-12 text-center text-sm text-slate-500">{{ $search !== '' ? 'No uploaded file fits that search.' : 'Nothing uploaded yet.' }}</td></tr>
+                            <tr><td colspan="10" class="px-4 py-12 text-center text-sm text-slate-500">{{ $search !== '' || $paper !== '' ? 'No uploaded file fits that search.' : 'Nothing uploaded yet.' }}</td></tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
+            {{-- Folder view: one card per file, as KLAES's Toggle View. --}}
+            <div x-show="view === 'folder'" x-cloak class="grid gap-4 p-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                @forelse ($uploaded as $f)
+                    @php $st = $dms->status($f); @endphp
+                    <div class="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+                        <div class="flex items-start justify-between gap-2">
+                            <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-300"><i data-lucide="folder" class="h-5 w-5"></i></span>
+                            <span class="rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-wider {{ $statusTone[$st] }}">{{ $st }}</span>
+                        </div>
+                        <p class="mt-3 font-mono text-sm font-bold text-emerald-700 dark:text-emerald-400">{{ $f->file_number }}</p>
+                        <p class="truncate text-sm text-slate-700 dark:text-slate-200" title="{{ $f->file_title }}">{{ $f->file_title ?? '—' }}</p>
+                        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">{{ collect([$f->plot_number ? 'Plot '.$f->plot_number : null, $f->district, $f->lga])->filter()->implode(' · ') ?: '—' }}</p>
+                        <p class="mt-2 text-xs font-semibold text-slate-600 dark:text-slate-300">{{ $f->pages_count }} page(s) · {{ $f->typed_count }} typed</p>
+                        <button type="button" @click="showPages(@js(['id' => $f->id, 'file_number' => $f->file_number]))" class="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-blue-700 hover:underline dark:text-blue-300"><i data-lucide="images" class="h-3.5 w-3.5"></i> View pages</button>
+                    </div>
+                @empty
+                    <p class="col-span-full py-10 text-center text-sm text-slate-500">{{ $search !== '' || $paper !== '' ? 'No uploaded file fits that search.' : 'Nothing uploaded yet.' }}</p>
+                @endforelse
+            </div>
             @if ($uploaded->hasPages())<div class="border-t border-slate-100 px-5 py-3 dark:border-slate-800">{{ $uploaded->links() }}</div>@endif
+            @endif
+            {{-- Batch Actions --}}
+            @if ($uploaded->total() > 0)
+                <div class="flex justify-end border-t border-slate-100 bg-slate-50 px-5 py-4 dark:border-slate-800 dark:bg-slate-800/40">
+                    <a href="{{ route('dms.pagetyping.index') }}" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"><i data-lucide="arrow-right" class="h-4 w-4"></i> Proceed to Page Typing</a>
+                </div>
+            @endif
         </div>
 
         {{-- Select Indexed File pop-up --}}
         <template x-teleport="body">
             <div x-show="pickerOpen" x-cloak class="fixed inset-0 z-50 flex items-start justify-center bg-slate-900/60 p-4 pt-20 backdrop-blur-sm">
-                <div @click.outside="pickerOpen = false" class="w-full max-w-2xl rounded-2xl bg-white shadow-2xl dark:bg-slate-900">
-                    <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4 dark:border-slate-800">
-                        <h2 class="font-bold text-slate-900 dark:text-white">Select Indexed File</h2>
-                        <button type="button" @click="pickerOpen = false" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close"><i data-lucide="x" class="h-5 w-5"></i></button>
+                <div @click.outside="pickerOpen = false" class="w-full max-w-5xl rounded-2xl bg-white shadow-2xl dark:bg-slate-900">
+                    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800">
+                        <div class="flex items-center gap-3">
+                            <span class="rounded-lg bg-blue-100 p-2 text-blue-600 dark:bg-blue-500/15 dark:text-blue-300"><i data-lucide="folder-search" class="h-5 w-5"></i></span>
+                            <div><h2 class="font-bold text-slate-900 dark:text-white">Select Indexed File</h2><p class="text-xs text-slate-500 dark:text-slate-400">Click on a file to select it</p></div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div x-show="pending" x-cloak class="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 dark:border-emerald-500/40 dark:bg-emerald-500/10">
+                                <p class="text-[11px] font-semibold text-emerald-900 dark:text-emerald-200">Selected</p>
+                                <p class="font-mono text-xs text-emerald-700 dark:text-emerald-300" x-text="pending && pending.file_number"></p>
+                            </div>
+                            <button type="button" @click="pickerOpen = false" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close"><i data-lucide="x" class="h-5 w-5"></i></button>
+                        </div>
                     </div>
-                    <div class="p-5">
+                    <div class="space-y-4 p-5">
+                      <div class="grid gap-4 lg:grid-cols-2 lg:items-start">
+                        <div class="space-y-4">
+                            <div>
+                                <label for="scan-registry" class="mb-1 block text-sm font-semibold text-slate-700 dark:text-slate-200">Select Registry <span class="text-rose-500">*</span></label>
+                                <select id="scan-registry" class="w-full rounded-lg border-slate-300 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"><option value="KAMMA" selected>KAMMA</option></select>
+                                <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">KAMMA's files go to its own folders (EDMS/SCAN_UPLOAD/KAMMA).</p>
+                            </div>
                         <div class="relative">
                             <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"></i>
                             <input x-ref="pq" type="search" x-model="pq" @input.debounce.300ms="loadFiles()" placeholder="File number, title, plot, district, LGA…"
                                    class="w-full rounded-xl border border-slate-300 py-2.5 pl-9 pr-3 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
                         </div>
-                        <ul class="mt-3 max-h-96 divide-y divide-slate-100 overflow-y-auto rounded-xl border border-slate-200 dark:divide-slate-800 dark:border-slate-700">
+                        <ul class="mt-3 max-h-80 divide-y divide-slate-100 overflow-y-auto rounded-xl border border-slate-200 dark:divide-slate-800 dark:border-slate-700">
                             <template x-for="f in picks" :key="f.id">
-                                <li><button type="button" @click="choose(f)" class="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left hover:bg-blue-50 dark:hover:bg-slate-800">
+                                <li><button type="button" @click="pending = f" @dblclick="pending = f; confirmPick()" :class="pending && pending.id === f.id ? 'bg-blue-50 dark:bg-slate-800' : ''" class="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left hover:bg-blue-50 dark:hover:bg-slate-800">
                                     <span class="min-w-0">
                                         <span class="block font-mono text-sm font-bold text-emerald-700 dark:text-emerald-400" x-text="f.file_number"></span>
                                         <span class="block truncate text-xs text-slate-600 dark:text-slate-300" x-text="[f.file_title, f.plot_number && ('Plot ' + f.plot_number), f.district, f.lga].filter(Boolean).join(' · ')"></span>
@@ -255,6 +329,92 @@
                             </template>
                             <li x-show="! picks.length" class="px-4 py-6 text-center text-sm text-slate-500" x-text="cfg.scanMore ? 'No page-typed file matches. Scan More is for files already page typed.' : 'No indexed file matches. Match it first in the File Indexing Assistant.'"></li>
                         </ul>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="space-y-3 rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+                                <div><p class="text-sm font-semibold text-slate-800 dark:text-slate-100">Upload Method</p><p class="text-xs text-slate-500 dark:text-slate-400">Choose how these documents will be added to the file.</p></div>
+                                <div class="grid gap-3 sm:grid-cols-2">
+                                    @foreach (['blind' => ['Blind scan', 'scan-line', 'Browse documents from the KAMMA blind-scan folder.'], 'direct' => ['Direct upload', 'upload', 'Documents are added from this workstation.']] as $v => [$l, $ico, $d])
+                                        <label class="flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition" :class="method === '{{ $v }}' ? 'border-blue-500 bg-blue-50/60 dark:bg-blue-500/10' : 'border-slate-200 hover:border-blue-400 dark:border-slate-700'">
+                                            <input type="radio" value="{{ $v }}" x-model="method" class="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500">
+                                            <span><span class="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100"><i data-lucide="{{ $ico }}" class="h-4 w-4"></i>{{ $l }}</span><span class="text-xs text-slate-500 dark:text-slate-400">{{ $d }}</span></span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                                <div class="space-y-2 border-t border-slate-200 pt-3 dark:border-slate-700">
+                                    <button type="button" :disabled="! pending" @click="lfNote = 'Large-format browsing opens with the back end (preview).'" class="flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"><i data-lucide="image" class="h-4 w-4"></i>Browse Large-Format Scans</button>
+                                    <p class="break-all text-xs text-slate-500 dark:text-slate-400">Master LFS Folder: storage/EDMS/UPLOAD/KAMMA/LFS</p>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400" x-text="lfNote || (pending ? 'LF images are added to the upload pages of ' + pending.file_number + '.' : 'Select an indexed file first. LF images are added to its upload pages.')"></p>
+                                </div>
+                            </div>
+                            <div class="rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+                                <div class="flex items-center justify-between gap-3">
+                                    <div><p class="text-sm font-semibold text-slate-800 dark:text-slate-100">Preview</p><p class="text-xs text-slate-500 dark:text-slate-400">The file-type instruction is usually written on the file's cover.</p></div>
+                                    <button type="button" :disabled="! pending" @click="coverOpen = ! coverOpen" class="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"><i data-lucide="eye" class="h-4 w-4"></i>Preview file</button>
+                                </div>
+                                <div x-show="coverOpen && pending" x-cloak class="mt-3 flex min-h-[140px] items-center justify-center rounded-lg border border-slate-200 bg-slate-50 p-3 text-center text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400"
+                                     x-text="pending && pending.pages ? pending.pages + ' page(s) on file: open View Uploaded Files to see them.' : 'No pages on this file yet.'"></div>
+                            </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="flex justify-end gap-3 border-t border-slate-100 bg-slate-50 px-5 py-4 dark:border-slate-800 dark:bg-slate-800/40">
+                        <button type="button" @click="pickerOpen = false" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">Cancel</button>
+                        <button type="button" @click.stop="confirmPick()" :disabled="! pending" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"><i data-lucide="check" class="h-4 w-4"></i> Load Documents</button>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        {{-- Blind Scan Documents (KLAES blind_scan_modal): the file's pages waiting in EDMS/BLIND_SCAN/KAMMA_Raw. Tick and Add:
+             they are copied into EDMS/SCAN_UPLOAD/KAMMA and become the file's scanned pages. --}}
+        <template x-teleport="body">
+            <div x-show="blindOpen" x-cloak class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-900/60 p-4 pt-16 backdrop-blur-sm">
+                <div @click.outside="blindOpen = false" class="w-full max-w-4xl rounded-2xl bg-white shadow-2xl dark:bg-slate-900">
+                    <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4 dark:border-slate-800">
+                        <div class="flex items-center gap-3">
+                            <span class="rounded-lg bg-indigo-100 p-2 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-300"><i data-lucide="scan-line" class="h-5 w-5"></i></span>
+                            <div><h2 class="font-bold text-slate-900 dark:text-white">Blind Scan Documents</h2><p class="font-mono text-xs text-slate-600 dark:text-slate-300" x-text="blindLoading ? 'Searching for folder...' : (blindFolder || (file ? file.file_number : ''))"></p></div>
+                        </div>
+                        <button type="button" @click="blindOpen = false" class="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close"><i data-lucide="x" class="h-5 w-5"></i></button>
+                    </div>
+                    <div class="space-y-4 p-5">
+                        <p x-show="blindLoading" class="text-sm text-slate-600 dark:text-slate-300">Scanning blind scan storage...</p>
+                        <div x-show="! blindLoading && blind.length" class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                            <div class="rounded-lg bg-indigo-50 p-3 dark:bg-indigo-500/10"><p class="text-xs text-indigo-700 dark:text-indigo-300">Total Files</p><p class="text-2xl font-bold text-indigo-900 dark:text-indigo-100" x-text="blind.length"></p></div>
+                            <div class="rounded-lg bg-indigo-50 p-3 dark:bg-indigo-500/10"><p class="text-xs text-indigo-700 dark:text-indigo-300">Paper Sizes</p><p class="text-sm font-bold text-indigo-900 dark:text-indigo-100" x-text="countBy('paper')"></p></div>
+                            <div class="rounded-lg bg-indigo-50 p-3 dark:bg-indigo-500/10"><p class="text-xs text-indigo-700 dark:text-indigo-300">Document Types</p><p class="text-sm font-bold text-indigo-900 dark:text-indigo-100" x-text="countBy('type')"></p></div>
+                        </div>
+                        <div x-show="! blindLoading && ! blind.length" class="rounded-lg border border-dashed border-slate-300 p-5 text-center text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300">
+                            <p class="font-semibold text-slate-900 dark:text-white">No blind scan documents found.</p>
+                            <p class="mt-1">Ask the scanning team to confirm the folder exists in EDMS/BLIND_SCAN/KAMMA_Raw (DMS &gt; Blind Scanning).</p>
+                        </div>
+                        <div x-show="blind.length" class="max-h-96 overflow-auto rounded-lg border border-slate-200 dark:border-slate-700">
+                            <table class="w-full text-sm"><thead class="sticky top-0 bg-slate-50 dark:bg-slate-800"><tr>
+                                <th class="{{ $th }}"><input type="checkbox" :checked="ticked.length === blind.length" @change="ticked = $event.target.checked ? blind.map((b) => b.id) : []" aria-label="Tick all" class="rounded border-slate-300 text-blue-600"></th>
+                                @foreach (['File Name', 'Relative Path', 'Paper', 'Type', 'Size'] as $h)<th class="{{ $th }}">{{ $h }}</th>@endforeach
+                            </tr></thead>
+                            <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                                <template x-for="b in blind" :key="b.id">
+                                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-800/40">
+                                        <td class="{{ $td }}"><input type="checkbox" :value="b.id" x-model.number="ticked" class="rounded border-slate-300 text-blue-600"></td>
+                                        <td class="{{ $td }}"><a :href="b.url" target="_blank" class="text-blue-700 hover:underline dark:text-blue-300" x-text="b.name"></a></td>
+                                        <td class="{{ $td }} font-mono text-xs" x-text="b.path"></td>
+                                        <td class="{{ $td }}" x-text="b.paper"></td>
+                                        <td class="{{ $td }}" x-text="b.type"></td>
+                                        <td class="{{ $td }}" x-text="Math.round(b.size / 1024) + ' KB'"></td>
+                                    </tr>
+                                </template>
+                            </tbody></table>
+                        </div>
+                        <p x-show="blindError" class="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:bg-rose-500/10 dark:text-rose-300" x-text="blindError"></p>
+                    </div>
+                    <div class="flex items-center justify-between gap-3 border-t border-slate-100 bg-slate-50 px-5 py-4 dark:border-slate-800 dark:bg-slate-800/40">
+                        <span class="text-xs text-slate-500" x-text="ticked.length + ' of ' + blind.length + ' ticked'"></span>
+                        <div class="flex gap-3">
+                            <button type="button" @click="blindOpen = false" class="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">Cancel</button>
+                            <button type="button" @click="addBlind()" :disabled="! ticked.length || busy" class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"><i data-lucide="plus" class="h-4 w-4"></i> Add</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -301,13 +461,46 @@
                     cfg, tab: cfg.tab, file: cfg.selected, convert: true, pdfReady: false, paper: 'A4', drag: false,
                     queue: [], converting: '', busy: false, progress: 0, error: '', done: '',
                     pickerOpen: false, pq: '', picks: [], pagesOpen: false, pagesOf: '', pageList: [],
+                    pending: null, method: 'direct', lfNote: '', coverOpen: false, blindOpen: false, view: 'list',
+                    blind: [], ticked: [], blindLoading: false, blindError: '', blindFolder: '',
                     init() {
                         if (window.pdfjsLib) {
                             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
                             this.pdfReady = true;
                         }
                     },
-                    openPicker() { this.pickerOpen = true; this.loadFiles(); this.$nextTick(() => this.$refs.pq.focus()); icons(); },
+                    confirmPick() {
+                        if (! this.pending) return;
+                        this.choose(this.pending);
+                        if (this.method === 'blind') this.openBlind();
+                    },
+                    async openBlind() {
+                        this.blindOpen = true; this.blind = []; this.ticked = []; this.blindError = ''; this.blindLoading = true;
+                        try {
+                            const r = await fetch(cfg.blindFolder.replace('__ID__', this.file.id), { headers: { Accept: 'application/json' } });
+                            const data = await r.json();
+                            this.blind = data.pages || []; this.blindFolder = data.folder || '';
+                            this.ticked = this.blind.map((b) => b.id);
+                        } catch (e) { this.blindError = 'Could not read the blind-scan folder.'; }
+                        finally { this.blindLoading = false; icons(); }
+                    },
+                    countBy(key) {
+                        const c = {}; this.blind.forEach((b) => { c[b[key]] = (c[b[key]] || 0) + 1; });
+                        return Object.entries(c).map(([k, n]) => k + ': ' + n).join(' · ');
+                    },
+                    async addBlind() {
+                        this.busy = true; this.blindError = '';
+                        try {
+                            const res = await fetch(cfg.blindTake, { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+                                body: JSON.stringify({ file_indexing_id: this.file.id, ids: this.ticked }) });
+                            const data = await res.json().catch(() => ({}));
+                            if (! res.ok) throw new Error(data.errors ? Object.values(data.errors).flat()[0] : (data.message || 'Could not add the pages.'));
+                            this.file.pages = (this.file.pages || 0) + (data.count || 0);
+                            this.done = data.message; this.blindOpen = false;
+                        } catch (e) { this.blindError = e.message; }
+                        finally { this.busy = false; icons(); }
+                    },
+                    openPicker() { this.pending = this.file; this.lfNote = ''; this.coverOpen = false; this.pickerOpen = true; this.loadFiles(); this.$nextTick(() => this.$refs.pq.focus()); icons(); },
                     async loadFiles() {
                         const r = await fetch(cfg.files + (cfg.files.includes('?') ? '&' : '?') + 'q=' + encodeURIComponent(this.pq), { headers: { Accept: 'application/json' } });
                         this.picks = (await r.json()).files || [];

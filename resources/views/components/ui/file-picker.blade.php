@@ -1,12 +1,17 @@
 {{-- File selector (KLAES rule: file numbers are picked, never typed). source "klaes" = KLAES land files
-     (dbo.file_indexings, read-only); source "shadow" = KAMMA's commissioned shadow files. On pick the details fill in and lock
+     (dbo.file_indexings, read-only); source "shadow" = KAMMA's commissioned shadow files; source "bp" = BP files on the
+     Development Permit register. On pick the details fill in and lock
      (Plot No., District, LGA, Location); "Change file" clears them. Fires a "file-picked" event with the file. --}}
 @props(['name' => 'file_id', 'source' => 'klaes', 'label' => null, 'required' => true, 'hint' => null])
 
 @php
-    $url = $source === 'shadow' ? route('ui.shadow-files') : route('klaes.files.search');
-    $label ??= $source === 'shadow' ? 'KAMMA shadow file' : 'Land file (KLAES)';
-    $placeholder = $source === 'shadow' ? 'e.g. RES-2016-452, KMA-TRK tracking ID or file title' : 'e.g. RES-2016-452 or the holder\'s name';
+    $url = match ($source) { 'shadow' => route('dms.scanning.files'), 'bp' => route('bpa.bp-files.search'), default => route('klaes.files.search') };
+    $label ??= match ($source) { 'shadow' => 'KAMMA shadow file', 'bp' => 'BP file', default => 'Land file (KLAES)' };
+    $placeholder = match ($source) {
+        'shadow' => 'e.g. RES-2016-452, KMA-TRK tracking ID or file title',
+        'bp' => 'e.g. BP-2026-1, the land file number or the file title',
+        default => 'e.g. RES-2016-452 or the holder\'s name',
+    };
     $field = 'w-full rounded-lg border-slate-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100';
     $locked = 'rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200';
     $lbl = 'mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-400';

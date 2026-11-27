@@ -3,10 +3,12 @@
 @section('title', 'Confirm your number')
 
 @section('form')
-    <div class="mt-6 rounded-xl border border-dashed border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
-        <span class="font-bold">Preview:</span> no SMS is sent yet. Your code is
-        <span class="font-mono text-base font-bold tracking-widest">{{ $pending['code'] }}</span>.
-    </div>
+    @if (! $smsSent && filled($pending['code'] ?? null))
+        <div class="mt-6 rounded-xl border border-dashed border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
+            <span class="font-bold">Test system:</span> no SMS is sent here. Your code is
+            <span class="font-mono text-base font-bold tracking-widest">{{ $pending['code'] }}</span>.
+        </div>
+    @endif
 
     <form method="POST" action="{{ route('portal.verify.submit') }}" class="mt-6 space-y-5">
         @csrf

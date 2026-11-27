@@ -29,6 +29,7 @@ $icons = [
     'revm' => 'M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z',
     'records' => 'M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25',
     'kamma' => 'M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z',
+    'building' => 'M2.25 21h19.5m-18 0V5.25A2.25 2.25 0 0 1 6 3h12a2.25 2.25 0 0 1 2.25 2.25V21M9 7.5h1.5M9 11.25h1.5M9 15h1.5m3-7.5H15m-1.5 3.75H15m-1.5 3.75H15M9.75 21v-2.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21',
     'gis' => 'M9 6.75V15m6-6v8.25m.503 3.498 4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 0 0-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0Z',
     'legacy' => 'M20.25 6.375c0 2.278-3.694 4.125-8.25 4.125S3.75 8.653 3.75 6.375m16.5 0c0-2.278-3.694-4.125-8.25-4.125S3.75 4.097 3.75 6.375m16.5 0v11.25c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125V6.375m16.5 0v3.75m-16.5-3.75v3.75m16.5 0v3.75C20.25 16.153 16.556 18 12 18s-8.25-1.847-8.25-4.125v-3.75m16.5 0c0 2.278-3.694 4.125-8.25 4.125s-8.25-1.847-8.25-4.125',
     'hr' => 'M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Zm6-10.125a1.875 1.875 0 1 1-3.75 0 1.875 1.875 0 0 1 3.75 0Zm1.294 6.336a6.721 6.721 0 0 1-3.17.789 6.721 6.721 0 0 1-3.168-.789 3.376 3.376 0 0 1 6.338 0Z',
@@ -74,13 +75,15 @@ return [
 
     ['label' => 'DMS', 'icon' => $icons['dms'], 'children' => [
         ['label' => 'Indexing', 'children' => [
-            ['label' => 'File Indexing Assistant', 'route' => 'dms.indexing.index', 'active' => 'dms.indexing.*', 'active_query' => ['from' => null]],
+            // User 2026-11-25: /dms/indexing (shadow-file matching) taken off the menu "for now"; DMS indexing = the BP
+            // existing-file indexing (two sides). The old screen is still reachable from KAMMA > Shadow File Commissioning.
+            ['label' => 'File Indexing Assistant', 'route' => 'bpa.bp-files.indexed', 'active' => ['bpa.bp-files.indexed', 'bpa.bp-files.create-indexed']],
             ['label' => 'Missing Files', 'route' => 'records.show', 'params' => ['dataset' => 'missing-files'], 'active_param' => ['dataset', 'missing-files']],
             ['label' => 'Indexing Duplicates', 'route' => 'records.show', 'params' => ['dataset' => 'indexing-duplicates'], 'active_param' => ['dataset', 'indexing-duplicates']],
             ['label' => 'File History View', 'route' => 'records.show', 'params' => ['dataset' => 'file-history'], 'active_param' => ['dataset', 'file-history']],
             ['label' => 'File SerialNo Grouping', 'children' => [
                 ['label' => 'SerialNo Grouping', 'route' => 'dms.grouping', 'active' => 'dms.grouping'],
-                ['label' => 'Print Files Label', 'route' => 'dms.labels', 'active' => ['dms.labels', 'dms.labels.sheet']],
+                ['label' => 'Print Files Label', 'route' => 'dms.labels', 'active' => ['dms.labels', 'dms.labels.*']],
             ]],
         ]],
         ['label' => 'Print Sign In & Out Sheet', 'route' => 'dms.signin', 'active' => 'dms.signin'],
@@ -164,6 +167,52 @@ return [
         ['label' => 'Parcel/Title Management', 'children' => [
             ['label' => 'Master KSI', 'route' => 'kamma.master-ksi.index', 'active' => ['kamma.master-ksi.index', 'kamma.master-ksi.create', 'kamma.master-ksi.show']],
         ]],
+        // Development Permit (user, WhatsApp 2026-11-24: "These side bars under KADCA will have to be moved under KAMMA" +
+        // "Create a Sub Module called Development Permit"). Put back here 2026-11-25 after a wrong move to a top-level module.
+        // Commissioning (New Files), then the KADCA block of the menu doc. Routes in routes/bpa.php.
+        ['label' => 'Development Permit', 'children' => [
+            // Dashboard removed (user 2026-11-25: "no need having two dashboard"; KAMMA > Dashboard is the one). Route still works.
+            ['label' => 'Commissioning (New Files)', 'route' => 'bpa.bp-files.commissioned', 'active' => ['bpa.bp-files.commissioned', 'bpa.bp-files.create-commissioned']],
+            // BP File Register hidden for now (user 2026-11-25; not in the menu doc). Route still works.
+            // ['label' => 'BP File Register', 'route' => 'bpa.bp-files.index', 'active' => ['bpa.bp-files.index', 'bpa.bp-files.edit']],
+            ['label' => 'Assessment Stage', 'children' => [
+                ['label' => 'Application Form', 'route' => 'bpa.applications.create', 'active' => 'bpa.applications.create'],
+                ['label' => 'Initial Bill', 'route' => 'bpa.bills.index', 'active' => 'bpa.bills.*'],
+            ]],
+            ['label' => 'Applications', 'route' => 'bpa.applications.index', 'active' => ['bpa.applications.index', 'bpa.applications.show'], 'active_query' => ['source' => null]],
+            ['label' => 'Architecture', 'children' => [
+                ['label' => 'Building Plan', 'route' => 'bpa.building-plans.index', 'active' => 'bpa.building-plans.*'],
+                ['label' => 'Payment', 'route' => 'bpa.payments.index', 'active' => 'bpa.payments.*'],
+                ['label' => 'File Commissioning', 'route' => 'bpa.commissioning.index', 'active' => 'bpa.commissioning.*'],
+                ['label' => 'Zonal Officer', 'children' => [
+                    ['label' => 'Inspection', 'route' => 'bpa.inspection', 'active' => 'bpa.inspection'],
+                ]],
+            ]],
+            ['label' => 'Field Data Integration', 'route' => 'bpa.field-data', 'active' => 'bpa.field-data'],
+            ['label' => 'Bills & Payments', 'children' => [
+                ['label' => 'Bills', 'route' => 'bpa.bills.index'],
+                ['label' => 'Payments', 'route' => 'bpa.payments.index', 'params' => ['tab' => 'paid']],
+                ['label' => 'Payments Report', 'route' => 'bpa.payments-report', 'active' => 'bpa.payments-report'],
+            ]],
+            ['label' => 'Approvals', 'children' => [
+                ['label' => 'Director', 'children' => [
+                    ['label' => 'Approval', 'route' => 'bpa.desks.index', 'params' => ['desk' => 'director'], 'active_param' => ['desk', 'director']],
+                ]],
+                ['label' => 'Deputy Director', 'children' => [
+                    ['label' => 'Approval', 'route' => 'bpa.desks.index', 'params' => ['desk' => 'deputy-director'], 'active_param' => ['desk', 'deputy-director']],
+                ]],
+                ['label' => 'Head of Zonal Office', 'children' => [
+                    ['label' => 'Approval', 'route' => 'bpa.zonal-approval', 'active' => 'bpa.zonal-approval'],
+                ]],
+            ]],
+            ['label' => 'GIS', 'children' => [
+                ['label' => 'BaseMap', 'route' => 'bpa.basemap', 'active' => 'bpa.basemap'],
+                ['label' => 'Charting', 'route' => 'bpa.charting', 'active' => 'bpa.charting'],
+            ]],
+            ['label' => 'BPA Memo', 'route' => 'bpa.memo', 'active' => 'bpa.memo'],
+            ['label' => 'Final Conveyance', 'route' => 'bpa.conveyance', 'active' => 'bpa.conveyance'],
+            ['label' => 'Reports', 'route' => 'bpa.reports.index', 'active' => 'bpa.reports.*'],
+        ]],
         ['label' => 'Bills & Payments', 'children' => [
             ['label' => 'Bills', 'route' => 'kamma.bills.index', 'active' => ['kamma.bills.index', 'kamma.bills.create'], 'active_query' => ['from' => null]],
             ['label' => 'Payments', 'route' => 'kamma.payments.index', 'active' => 'kamma.payments.index', 'active_query' => ['from' => null]],
@@ -186,38 +235,42 @@ return [
         ['label' => 'PP Reports', 'route' => 'kamma.reports', 'active' => 'kamma.reports*'],
     ]],
 
+    // Building Plan Approval (user 2026-11-25): only the building plan approval requests sent from the applicant portal.
+    // Same list as Development Permit > Applications, filtered to Sent from = Portal.
+    ['label' => 'Building Plan Approval', 'icon' => $icons['building'], 'route' => 'bpa.applications.index', 'params' => ['source' => 'portal'], 'active' => ['bpa.applications.index', 'bpa.applications.show'], 'active_query' => ['source' => 'portal']],
+
     ['label' => 'GIS', 'icon' => $icons['gis'], 'children' => [
-        ['label' => 'Records', 'screen' => 'gis.records'],
-        ['label' => 'Survey Plan Extraction', 'screen' => 'gis.extraction'],
-        ['label' => 'GIS', 'screen' => 'gis.map'],
-        ['label' => 'Approvals', 'screen' => 'gis.approvals'],
-        ['label' => 'E-Registry', 'screen' => 'gis.eregistry'],
-        ['label' => 'GIS Reports', 'screen' => 'gis.reports'],
+        ['label' => 'Records', 'route' => 'records.show', 'params' => ['dataset' => 'gis-records'], 'active_param' => ['dataset', 'gis-records']],
+        ['label' => 'Survey Plan Extraction', 'route' => 'gis.extraction', 'active' => 'gis.extraction'],
+        ['label' => 'GIS', 'route' => 'gis.map', 'active' => 'gis.map'],
+        ['label' => 'Approvals', 'route' => 'gis.approvals', 'active' => 'gis.approvals'],
+        ['label' => 'E-Registry', 'route' => 'records.show', 'params' => ['dataset' => 'e-registry'], 'active_param' => ['dataset', 'e-registry']],
+        ['label' => 'GIS Reports', 'route' => 'gis.reports', 'active' => 'gis.reports'],
     ]],
 
-    ['label' => 'Legacy Systems', 'icon' => $icons['legacy'], 'screen' => 'legacy.systems'],
+    ['label' => 'Legacy Systems', 'icon' => $icons['legacy'], 'route' => 'legacy.index', 'active' => 'legacy.index'],
 
     ['label' => 'HR Manager', 'icon' => $icons['hr'], 'children' => [
-        ['label' => 'Manual Attendance', 'screen' => 'hr.manual-attendance'],
-        ['label' => 'Attendance Tracking', 'screen' => 'hr.attendance'],
-        ['label' => 'Payroll', 'screen' => 'hr.payroll'],
-        ['label' => 'Activity Monitoring', 'screen' => 'hr.activity'],
+        ['label' => 'Manual Attendance', 'route' => 'hr.manual-attendance', 'active' => 'hr.manual-attendance'],
+        ['label' => 'Attendance Tracking', 'route' => 'hr.attendance', 'active' => 'hr.attendance'],
+        ['label' => 'Payroll', 'route' => 'hr.payroll', 'active' => 'hr.payroll'],
+        ['label' => 'Activity Monitoring', 'route' => 'activity.monitoring', 'params' => ['scope' => 'hr'], 'active' => 'activity.monitoring', 'active_query' => ['scope' => 'hr']],
     ]],
 
     ['label' => 'System Admin', 'icon' => $icons['admin'], 'children' => [
-        ['label' => 'Dashboard', 'screen' => 'admin.dashboard'],
+        ['label' => 'Dashboard', 'route' => 'admin.dashboard', 'active' => 'admin.dashboard'],
         ['label' => 'Configurable Entities', 'children' => [
-            ['label' => 'Entities & Rates', 'screen' => 'admin.entities'],
+            ['label' => 'Entities & Rates', 'route' => 'admin.entities', 'active' => 'admin.entities'],
         ]],
-        ['label' => 'Activity Logs', 'screen' => 'admin.activity-logs'],
-        ['label' => 'Activity Monitoring', 'screen' => 'admin.activity-monitoring'],
-        ['label' => 'User Roles', 'screen' => 'admin.roles'],
-        ['label' => 'Digital Signature Control', 'screen' => 'admin.signatures'],
-        ['label' => 'System Settings', 'screen' => 'admin.settings'],
-        ['label' => 'Folder Watcher', 'screen' => 'admin.folder-watcher'],
-        ['label' => 'Bulk SMS Management', 'screen' => 'admin.sms'],
-        ['label' => 'Verify QRCode', 'screen' => 'admin.verify-qr'],
-        ['label' => 'KLAES Mobile Apps', 'screen' => 'admin.mobile-apps'],
-        ['label' => 'KLAES Documentation', 'screen' => 'admin.docs'],
+        ['label' => 'Activity Logs', 'route' => 'admin.activity-logs', 'active' => 'admin.activity-logs'],
+        ['label' => 'Activity Monitoring', 'route' => 'activity.monitoring', 'params' => ['scope' => 'admin'], 'active' => 'activity.monitoring', 'active_query' => ['scope' => 'admin']],
+        ['label' => 'User Roles', 'route' => 'admin.roles', 'active' => 'admin.roles'],
+        ['label' => 'Digital Signature Control', 'route' => 'admin.signatures', 'active' => 'admin.signatures'],
+        ['label' => 'System Settings', 'route' => 'admin.settings', 'active' => 'admin.settings'],
+        ['label' => 'Folder Watcher', 'route' => 'admin.folder-watcher', 'active' => 'admin.folder-watcher'],
+        ['label' => 'Bulk SMS Management', 'route' => 'admin.sms', 'active' => 'admin.sms'],
+        ['label' => 'Verify QRCode', 'route' => 'admin.verify', 'active' => 'admin.verify'],
+        ['label' => 'KLAES Mobile Apps', 'route' => 'admin.mobile-apps', 'active' => 'admin.mobile-apps'],
+        ['label' => 'KLAES Documentation', 'route' => 'admin.documentation', 'active' => ['admin.documentation', 'admin.documentation.file']],
     ]],
 ];

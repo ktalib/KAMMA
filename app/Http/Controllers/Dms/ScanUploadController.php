@@ -24,7 +24,10 @@ class ScanUploadController extends Controller
     {
         $scanMore = $request->query('url') === 'scmore';
         $search = mb_substr(trim((string) $request->query('search', '')), 0, 100);
-        $uploaded = $dms->search($dms->query()->whereHas('scannings'), $search)
+        // KLAES Uploaded Documents: paper-size filter and the source tabs (Scanned Files / Module Uploads).
+        $paper = in_array($request->query('paper'), ['A4', 'A5', 'A3', 'Letter', 'Legal', 'Custom'], true) ? (string) $request->query('paper') : '';
+        $source = $request->query('source') === 'uploads' ? 'uploads' : 'scanned';
+        $uploaded = $dms->search($dms->query()->whereHas('scannings', fn ($s) => $paper !== '' ? $s->where('paper_size', $paper) : $s), $search)
             ->orderByDesc('updated_at')->orderByDesc('id')
             ->paginate(15)->withQueryString();
 
@@ -34,7 +37,7 @@ class ScanUploadController extends Controller
         }
 
         return view('dms.scanning.index', [
-            'stats' => $dms->scanStats(), 'uploaded' => $uploaded, 'search' => $search, 'scanMore' => $scanMore,
+            'stats' => $dms->scanStats(), 'uploaded' => $uploaded, 'search' => $search, 'scanMore' => $scanMore, 'paper' => $paper, 'source' => $source,
             'selected' => $selected, 'dms' => $dms, 'tab' => $request->query('tab') === 'uploaded' ? 'uploaded' : 'upload',
         ]);
     }
@@ -50,6 +53,8 @@ class ScanUploadController extends Controller
         return response()->json(['files' => $q->orderByDesc('id')->limit(20)->get()->map(fn (FileIndexing $f) => [
             'id' => $f->getKey(), 'file_number' => $f->file_number, 'file_title' => $f->file_title,
             'plot_number' => $f->plot_number, 'district' => $f->district, 'lga' => $f->lga,
+            // The shared file selector (<x-ui.file-picker source="shadow">) reads plot_no and location.
+            'plot_no' => $f->plot_number, 'location' => $f->location,
             'pages' => $f->pages_count, 'status' => $dms->status($f),
         ])]);
     }

@@ -38,6 +38,16 @@ return [
             'report' => false,
         ],
 
+        // KAMMA's EDMS (user 2026-11-25): the KLAES stage folders BLIND_SCAN, UPLOAD, SCAN_UPLOAD, PAGETYPING and
+        // ARCHIVE_Doc_WARE, each with a KAMMA folder (blind scan: KAMMA_Raw), on KAMMA's own Laravel storage, never the
+        // KLAES F:\storage. Private: pages are served only to signed-in staff through the DMS routes.
+        'edms' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private/EDMS'),
+            'throw' => false,
+            'report' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),

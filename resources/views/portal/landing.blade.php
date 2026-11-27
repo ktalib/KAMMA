@@ -42,7 +42,7 @@
     <title>Applicant Portal &mdash; {{ $agency }}</title>
     <meta name="description" content="{{ $agency }} Applicant Portal: ask for a Planning Recommendation with the {{ $agencyName }}, pay bills and track progress.">
     <meta name="theme-color" content="#065f46">
-    <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
+    <x-favicon />
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600,700,800,900&display=swap" rel="stylesheet">
     <style>

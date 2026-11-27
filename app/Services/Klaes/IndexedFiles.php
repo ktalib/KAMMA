@@ -65,6 +65,28 @@ class IndexedFiles
         return $row ? $this->present($row) : null;
     }
 
+    /**
+     * A land file's tracking ID, read from KLAES dbo.grouping by its file number (user 2026-11-26: the tracking ID is
+     * fetched from the grouping table by file number whenever needed, never copied into KAMMA rows).
+     */
+    public function trackingId(?string $fileNumber): ?string
+    {
+        $fileNumber = trim((string) $fileNumber);
+        if ($fileNumber === '') {
+            return null;
+        }
+        $table = $this->klaes()->getDriverName() === 'sqlsrv' ? '[grouping] with (nolock)' : 'grouping';
+
+        $id = $this->klaes()->table(DB::raw($table))
+            ->whereNull('deleted_at')
+            ->where(fn (Builder $q) => $q->where('awaiting_fileno', $fileNumber)->orWhere('indexing_mls_fileno', $fileNumber))
+            ->whereNotNull('tracking_id')->where('tracking_id', '<>', '')
+            ->orderByDesc('id')
+            ->value('tracking_id');
+
+        return $this->clean($id);
+    }
+
     private function live(): Builder
     {
         $table = $this->klaes()->getDriverName() === 'sqlsrv' ? 'file_indexings with (nolock)' : 'file_indexings';

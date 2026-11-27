@@ -2,6 +2,10 @@
 
 use App\Http\Controllers\Portal\ApplicationController;
 use App\Http\Controllers\Portal\AuthController;
+use App\Http\Controllers\Portal\Bpa\ApplicationController as BpaApplicationController;
+use App\Http\Controllers\Portal\Bpa\BuildingPlanController as BpaBuildingPlanController;
+use App\Http\Controllers\Portal\Bpa\InspectionController as BpaInspectionController;
+use App\Http\Controllers\Portal\Bpa\ProgressController as BpaProgressController;
 use App\Http\Controllers\Portal\DashboardController;
 use App\Http\Controllers\Portal\LandingController;
 use App\Http\Controllers\Portal\ProfileController;
@@ -50,6 +54,22 @@ Route::prefix('portal')->name('portal.')->group(function () {
         // KLAES land files for the selector: file numbers only, no phone or address.
         Route::get('land-files/search', [ApplicationController::class, 'fileSearch'])->middleware('throttle:60,1')->name('files.search');
         Route::get('land-files/{id}', [ApplicationController::class, 'fileShow'])->whereNumber('id')->name('files.show');
+
+        // Building Plan Approval (2026-11-25, recording: the building plan portal "is coming under KAMMA, not KADCA").
+        // Copied from the KADCA app's portal; UI first like the rest: saves answer "Saved (preview)".
+        Route::prefix('building-plans')->name('bpa.')->group(function () {
+            Route::get('/', [BpaBuildingPlanController::class, 'index'])->name('index');
+            Route::get('apply', [BpaApplicationController::class, 'create'])->name('applications.create');
+            Route::post('apply', [BpaApplicationController::class, 'store'])->name('applications.store');
+            Route::get('track', [BpaApplicationController::class, 'track'])->name('applications.track');
+            Route::get('construction-progress', [BpaProgressController::class, 'index'])->name('progress.index');
+            Route::post('construction-progress', [BpaProgressController::class, 'store'])->name('progress.store');
+            Route::get('inspections', [BpaInspectionController::class, 'index'])->name('inspections.index');
+            Route::post('inspections', [BpaInspectionController::class, 'store'])->name('inspections.store');
+            // Application numbers carry slashes (DEMO-BPA/2026/00001), so the reference takes the rest of the path.
+            Route::get('applications/{reference}', [BpaApplicationController::class, 'show'])
+                ->where('reference', '[A-Za-z0-9][A-Za-z0-9\-/]*')->name('applications.show');
+        });
 
         Route::get('profile', [ProfileController::class, 'show'])->name('profile');
         Route::put('profile', [ProfileController::class, 'update'])->name('profile.update');

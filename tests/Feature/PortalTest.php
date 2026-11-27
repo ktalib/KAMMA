@@ -18,6 +18,12 @@ class PortalTest extends TestCase
 {
     use KlaesFiles, KlaesUsers, RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        // The KAMMA portal was off 2026-11-23 .. 2026-11-25 ("for KADCA only"); switched on again 2026-11-25.
+    }
+
     private function asDemo(): static
     {
         return $this->withSession([PortalSession::KEY => [
@@ -78,14 +84,47 @@ class PortalTest extends TestCase
         $this->post('/portal/login', ['login' => 'Demo.Applicant', 'password' => 'kamma-demo'])->assertRedirect(route('portal.dashboard'));
     }
 
-    public function test_register_confirms_the_phone_and_signs_in_for_the_session_only(): void
+    public function test_register_confirms_the_phone_creates_the_account_and_it_signs_in_again(): void
     {
-        $this->post('/portal/register', ['name' => '  aminu   bello ', 'phone' => '08031234567', 'password' => 'secret123', 'password_confirmation' => 'secret123', 'terms' => '1'])
-            ->assertRedirect(route('portal.verify'));
+        $form = ['name' => '  aminu   bello ', 'phone' => '+2348031234567', 'email' => 'Aminu@Example.com', 'password' => 'secret123', 'password_confirmation' => 'secret123', 'terms' => '1'];
+        $this->post('/portal/register', $form)->assertRedirect(route('portal.verify'));
         $pending = session(PortalSession::PENDING);
+        $this->assertArrayNotHasKey('password_confirmation', $pending);
+        $this->assertNotSame('secret123', $pending['password']);
+        $this->get('/portal/register/verify')->assertOk()->assertSee($pending['code']); // dev: shown, not texted
+
+        $this->post('/portal/register/verify', ['code' => '000000'])->assertSessionHasErrors('code');
+        $this->assertDatabaseCount('portal_applicants', 0);
         $this->post('/portal/register/verify', ['code' => $pending['code']])->assertRedirect(route('portal.dashboard'));
 
+        $this->assertDatabaseHas('portal_applicants', ['username' => '08031234567', 'name' => 'Aminu Bello', 'phone' => '+2348031234567', 'email' => 'aminu@example.com']);
         $this->get('/portal/dashboard')->assertOk()->assertSee('Welcome, Aminu Bello')->assertSee('You have not made a request yet');
+
+        // Signs in again with the mobile in any form; the same mobile cannot register twice.
+        $this->post('/portal/logout');
+        $this->post('/portal/login', ['login' => '08031234567', 'password' => 'wrong'])->assertSessionHasErrors('login');
+        $this->post('/portal/login', ['login' => '2348031234567', 'password' => 'secret123'])->assertRedirect(route('portal.dashboard'));
+        $this->post('/portal/logout');
+        $this->post('/portal/register', ['phone' => '08031234567'] + $form)->assertSessionHasErrors('phone');
+
+        // A switched-off account is refused and signed out.
+        \App\Models\Portal\PortalApplicant::query()->update(['is_active' => false]);
+        $this->post('/portal/login', ['login' => '08031234567', 'password' => 'secret123'])->assertSessionHasErrors('login');
+    }
+
+    public function test_the_profile_saves_for_a_real_account(): void
+    {
+        $account = \App\Models\Portal\PortalApplicant::create(['username' => '08031234567', 'name' => 'Aminu Bello', 'phone' => '08031234567', 'password' => 'secret123', 'verified_at' => now()]);
+        $as = fn () => $this->withSession([PortalSession::KEY => ['id' => $account->id]]);
+
+        $as()->put('/portal/profile', ['name' => 'aminu  sani bello', 'email' => 'A@B.NG'])->assertSessionHas('status', 'Your details were saved.');
+        $this->assertSame(['Aminu Sani Bello', 'a@b.ng'], [$account->fresh()->name, $account->fresh()->email]);
+
+        $as()->put('/portal/profile/password', ['current_password' => 'nope', 'password' => 'newpass123', 'password_confirmation' => 'newpass123'])
+            ->assertSessionHasErrors('current_password', null, 'password');
+        $as()->put('/portal/profile/password', ['current_password' => 'secret123', 'password' => 'newpass123', 'password_confirmation' => 'newpass123'])
+            ->assertSessionHas('status', 'Your password was changed.');
+        $this->assertTrue(\Illuminate\Support\Facades\Hash::check('newpass123', $account->fresh()->password));
     }
 
     public function test_every_portal_page_renders_for_the_demo_applicant(): void

@@ -30,6 +30,12 @@ class FileTracker extends Model
         return $this->belongsTo(FileIndexing::class, 'file_indexing_id');
     }
 
+    /** The Building Plan application this tracker follows (BPA moved in from KADCA, 2026-11-25). */
+    public function bpaApplication(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Bpa\Application::class, 'bpa_application_id');
+    }
+
     public function currentUnit(): BelongsTo
     {
         return $this->belongsTo(Unit::class, 'current_unit_id');

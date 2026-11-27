@@ -15,27 +15,14 @@ use Illuminate\Support\Facades\Schema;
  * Applicants are members of the public, not KLAES staff, so they are NOT in dbo.users.
  * Open before running: the request number format (DEMO-KPR/... is a demo placeholder), whether a portal request becomes
  * the staff-side Shadow File request row directly, and the processing fee amount (config kamma.bills.processing_fee).
+ *
+ * 2026-11-25: applicant accounts are live (kamma_portal_applicants, made by 2026_11_23_000003 and extended by
+ * 2026_11_25_200001), so this draft now holds only the Planning Recommendation request tables (step 2).
  */
 return new class extends Migration
 {
     public function up(): void
     {
-        // Applicant accounts (kamma_portal_applicants).
-        Schema::create('portal_applicants', function (Blueprint $table) {
-            $table->id();
-            $table->string('username', 60)->unique();
-            $table->string('name', 150);
-            $table->string('phone', 20)->index();
-            $table->string('email', 150)->nullable()->index();
-            $table->string('password');
-            $table->dateTime('phone_verified_at')->nullable();
-            $table->boolean('is_demo')->default(false);       // demo login: no sign-in code (set by hand only)
-            $table->boolean('must_change_password')->default(false);
-            $table->boolean('is_active')->default(true);
-            $table->dateTime('last_login_at')->nullable();
-            $table->timestamps();
-        });
-
         // Planning Recommendation requests made on the portal (kamma_portal_requests). The land file is referenced by
         // its KLAES indexing id AND its file-number string (KLAES joins on the string), never altered.
         Schema::create('portal_requests', function (Blueprint $table) {
@@ -96,6 +83,5 @@ return new class extends Migration
         Schema::dropIfExists('portal_request_files');
         Schema::dropIfExists('portal_request_merge_files');
         Schema::dropIfExists('portal_requests');
-        Schema::dropIfExists('portal_applicants');
     }
 };

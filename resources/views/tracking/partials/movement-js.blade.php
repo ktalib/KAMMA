@@ -13,6 +13,17 @@
             m: { kind: 'mail', reference: '', title: '', mail_from: '', q: '', files: [], file_indexing_id: null, msg: '' },
 
             init() { this.load(); this.$nextTick(() => this.$refs.scan && this.$refs.scan.focus()); },
+            // Units grouped by department, in list order: KAMMA first, then External (user, 2026-11-26). `except` drops My Office.
+            unitGroups(except = null) {
+                const groups = [];
+                this.units.filter(u => u.id !== except).forEach(u => {
+                    const label = u.department || 'KAMMA desks';
+                    let g = groups.find(x => x.label === label);
+                    if (! g) groups.push(g = { label, items: [] });
+                    g.items.push(u);
+                });
+                return groups;
+            },
             async load() {
                 if (! this.office) return;
                 const q = new URLSearchParams({ office: this.office, kind: this.kind, dir: this.dir, state: this.state, search: this.search, from: this.from, to: this.to });

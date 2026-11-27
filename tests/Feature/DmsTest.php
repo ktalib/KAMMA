@@ -128,7 +128,7 @@ class DmsTest extends TestCase
         $this->upload($f, 3);
         $scans = Scanning::query()->where('file_indexing_id', $f->id)->orderBy('display_order')->get();
         $this->assertSame([1, 2, 3], $scans->pluck('display_order')->all());
-        Storage::disk('local')->assertExists($scans[0]->document_path);
+        Storage::disk('edms')->assertExists($scans[0]->document_path); $this->assertStringStartsWith('SCAN_UPLOAD/KAMMA/', $scans[0]->document_path);
 
         $this->actingAs($this->officer)->get(route('dms.pagetyping.index'))->assertOk()->assertSee('RES-2016-452');
 
@@ -193,6 +193,15 @@ class DmsTest extends TestCase
         $this->actingAs($this->officer)->get(route('archive.index', ['q' => 'kumbotso', 'page_type' => 'Town Planning']))->assertOk()->assertSee('RES-2016-452');
         $this->actingAs($this->officer)->get(route('archive.show', $f))->assertOk()->assertSee('Town Planning')->assertSee('TP-2');
         $this->actingAs($this->officer)->get(route('archive.show', FileIndexing::query()->where('file_number', 'RES-2017-10')->first()))->assertOk()->assertSee('Not typed yet');
+
+        // KLAES Doc-WARE parts (2026-11-25): card menu, file details pop-up, viewer tools; the file-changing ones are preview.
+        $this->actingAs($this->officer)->get(route('archive.index'))->assertOk()
+            ->assertSee('View Details')->assertSee('Move to NR')->assertDontSee('Delete File') /* Super Admin only */->assertSee('Page Classifications')->assertSee('Location Plan');
+        $this->actingAs($this->officer)->get(route('archive.show', $f))->assertOk()
+            ->assertSee('Edit Mode')->assertSee('Edit Type')->assertSee('Reassign')->assertSee('Brightness');
+        $pages = Scanning::query()->where('file_indexing_id', $f->id)->count();
+        $this->actingAs($this->officer)->post(route('ui.preview', 'docware-delete-page'), ['scanning_id' => 1])->assertSessionHas('status', 'Saved (preview)');
+        $this->assertSame($pages, Scanning::query()->where('file_indexing_id', $f->id)->count());
     }
 
     public function test_scan_upload_screens_and_sidebar_links(): void
@@ -200,6 +209,16 @@ class DmsTest extends TestCase
         $f = $this->matchFile();
         $this->actingAs($this->officer)->get(route('dms.scanning.index', ['file' => $f->id]))->assertOk()->assertSee('Document Upload')->assertSee('RES-2016-452');
         $this->actingAs($this->officer)->get(route('dms.scanning.index', ['url' => 'scmore', 'from' => 'dms']))->assertOk()->assertSee('Scan More');
+
+        // KLAES Scan Upload parts (2026-11-25): Select Indexed File dialog, Blind Scan Documents, source tabs, filter, views.
+        $this->actingAs($this->officer)->get(route('dms.scanning.index'))->assertOk()
+            ->assertSee('Upload Method')->assertSee('Direct upload')->assertSee('Browse Large-Format Scans')->assertSee('Load Documents')
+            ->assertSee('Blind Scan Documents')->assertSee('EDMS/BLIND_SCAN/KAMMA_Raw')->assertSee('Module Uploads')->assertSee('Toggle View');
+        $this->upload($f, 1);
+        $this->actingAs($this->officer)->get(route('dms.scanning.index', ['tab' => 'uploaded', 'paper' => 'A4']))->assertOk()->assertSee('RES-2016-452')->assertSee('Proceed to Page Typing');
+        $this->actingAs($this->officer)->get(route('dms.scanning.index', ['tab' => 'uploaded', 'paper' => 'A3']))->assertOk()->assertSee('No uploaded file fits that search.');
+        $this->actingAs($this->officer)->get(route('dms.scanning.index', ['tab' => 'uploaded', 'source' => 'uploads']))->assertOk()->assertSee('No module uploads yet');
+        $this->actingAs($this->officer)->get(route('dms.blind'))->assertOk()->assertSee('BLIND SCANNING - Document Upload')->assertSee('KAMMA_Raw')->assertSee('Blind Scanning Summary');
         $this->actingAs($this->officer)->get(route('dms.pagetyping.index'))->assertOk()
             ->assertSee(route('dms.indexing.index'), false)->assertSee(route('archive.index'), false);
     }

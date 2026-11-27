@@ -31,4 +31,11 @@ class Serials
 
         return $value;
     }
+
+    /** Moves a counter up to $value (never down), e.g. past BP numbers already used by indexed files (BPA, 2026-11-25). */
+    public function raiseTo(string $name, int $year, int $value): void
+    {
+        DB::table('serials')->where('name', $name)->where('year', $year)->where('last_value', '<', $value)
+            ->update(['last_value' => $value, 'updated_at' => now()]);
+    }
 }

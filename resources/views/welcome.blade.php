@@ -16,7 +16,7 @@
     <title>{{ $agency }}</title>
     <meta name="description" content="{{ $agency }}: {{ $agencyName }} on the {{ $tagline }}.">
     <meta name="theme-color" content="#006837">
-    <link rel="icon" type="image/png" href="{{ asset('images/logo.png') }}">
+    <x-favicon />
     <style>
         *, *::before, *::after { box-sizing: border-box; }
         html, body { margin: 0; min-height: 100%; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
